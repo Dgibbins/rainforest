@@ -9,7 +9,7 @@
 
   <div class="prod-price">
     <p>
-      $<%= @product.price_in_cents/100 %>
+      $<%= @product.dollars_conversion %>
     </p>
   </div>
   <%= link_to "Back", products_path %>

@@ -1,0 +1,20 @@
+1. Formulate general database relationships.
+2. Figure out what your attributes are.
+  We have three Models: Products, Users, Reviews
+
+  Products will have; name:string description:text price_in_cents:integer
+  Users: email:string password_digest (Also will run the RbCrypt gem.)
+  Reviews: date:datetime review_text:text user_id
+
+3. Form relationship.
+  Product: has_many :reviews
+  Reviews: belongs_to :users
+           belongs_to :product
+  Users: has_many :reviews
+
+4. MVC, start with Products.
+
+    - rails g model Product name description:text price_in_cents:integer
+    - review migration then run a db:migrate.
+    - create the views
+    -create the controllers

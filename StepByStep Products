@@ -18,3 +18,5 @@
     - review migration then run a db:migrate.
     - create the views: rails g controller products index show new create update edit destroy
     - create the controllers
+
+5. Validate your products.

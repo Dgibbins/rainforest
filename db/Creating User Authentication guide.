@@ -1,0 +1,43 @@
+1. Install Gem Bcrypt
+    https://github.com/codahale/bcrypt-ruby
+    https://rubygems.org/gems/bcrypt
+
+
+2.Add a blank user model with rails.
+  rails generate model User email password_digest --no-test-framework #requires a password_digest attribute.
+
+3. Run migration.
+
+4. In your model User:
+        class User < ApplicationRecord
+          has_secure_password
+        end
+
+5. Can go through Terminal to use the model.
+
+6. bin/rails generate controller Users new create\
+
+7.  Update your routes.
+  resource :users, only: %i(new create) # creates just a new and create actions. Use RESOURCE (SINGLUAR) because you're dealing with one account only,
+
+8. refer to 11:20 am. Monday. Feb 6th.
+
+9. Flash.now 11:45 am when you had a redirect, don't use flash.now. when you have a render user flash.now'
+
+10. 11:48. COOKIES
+
+11. Generate a Sessions crontroller.
+
+  rails generate controller Sessions new create destroy -no-test-framework --no-helper --no-assets
+
+  Allows to log in and out of a website. 11:54 am.
+
+
+12. 12:00. filling in sessions params.
+
+13. 12:10. Making user log in link with message for log in session.
+
+
+14. 12:14-12:19   Current_user display and Helper_method.
+
+15. 12:20 log out method.

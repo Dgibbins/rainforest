@@ -1,4 +1,15 @@
 <%= form_for(@product) do |f| %>
+  <% if @product.errors.any? %>
+    <div class="error_explanation">
+      <h2><%= pluralize(@product.errors.count, "error") %> prevented this page from loading properly:</h2>
+
+        <ul>
+          <% @product.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+    </div>
+  <% end %>
 
   <p>
     <%= f.label :name %></br>

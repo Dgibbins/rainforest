@@ -1,0 +1,15 @@
+
+<h1><%= @product.name %></h1>
+
+  <div class="prod-desc">
+    <p>
+      <%= @product.description %>
+    </p>
+  </div>
+
+  <div class="prod-price">
+    <p>
+      $<%= @product.price_in_cents/100 %>
+    </p>
+  </div>
+  <%= link_to "Back", products_path %>

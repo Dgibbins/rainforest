@@ -1,0 +1,11 @@
+<h1>Products</h1>
+  <%= link_to "List a Product", new_product_path %>
+  <% @products.each do |product| %>
+    <div class="product-desc">
+      <p>
+        <%=  product.name %></br>
+        Description: <%=  product.description %></br>
+        $<%=  (product.price_in_cents)/100 %> | <%= link_to "View", product_path(product.id) %>
+      </p>
+    </div>
+  <% end %>

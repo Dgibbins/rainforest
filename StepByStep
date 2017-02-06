@@ -16,5 +16,5 @@
 
     - rails g model Product name description:text price_in_cents:integer
     - review migration then run a db:migrate.
-    - create the views
-    -create the controllers
+    - create the views: rails g controller products index show new create update edit destroy
+    - create the controllers

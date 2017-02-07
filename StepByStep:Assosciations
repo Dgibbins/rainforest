@@ -1,0 +1,345 @@
+11. Creating review model and associating the user, product and review models
+
+Let's generate the review model with the correct foreign keys, and then we'll discuss
+the associations that exist in our app and why those foreign keys are needed.
+
+$ rails g model review comment:text product_id:integer user_id:integer
+Concept: Associations
+
+In Rails, an association is a connection between two Active Record models. Associations
+are implemented using macro-style calls, so that you can declaratively add features to your models. For example, by declaring that one model belongs_to another, you instruct Rails to maintain Primary / Key–Foreign Key information between instances of the two models, and you also get a number of utility methods added to your model.
+
+Associations come in 6 different forms:
+
+belongs_to
+has_one
+has_many
+has_many :through
+has_one :through
+hasandbelongstomany
+Our app will use the "has_many :through" relationship, but we go through all of the
+smallers steps to get there. Let's start with figuring out how a product and review are related. Keep reading until you see the bash command to create the corresponding models before writing any code.
+
+Does each product have one review? That doesn't make sense because that would limit
+the perspective shared on a product. Does each product have many reviews? Yes that makes sense, so let's write that now.
+
+app/models/product.rb
+
+class Product < ActiveRecord::Base
+  has_many :reviews
+end
+Does each review have many products? That doesn't make sense, why would you create
+one review for many products? That wouldn't be very specific information. Does each review have one product? It does, but there is a subtle difference, it "belongs to" a product. The distinction does two things, it establishes the direction of the relationship and it specifies by convention that review must have a foreign key.
+
+A foreign key is a field in a relational table that matches a candidate key of another
+table. The foreign key can be used to cross-reference tables. (source: Wikipedia)
+
+The convention in Rails is that the foreign key is the referenced model name followed
+by an _id and is always an integer or "reference", which for this application's purposes is an integer. For example, the foreign key field required to reference the product model from the review model would be product_id. The review model will look as follows:
+
+app/models/review.rb
+
+class Review < ActiveRecord::Base
+  belongs_to :product
+end
+Given the relationship is the same for the review model and user model. We would repeat the same process:
+
+class Product < ActiveRecord::Base
+  ...
+  has_many :reviews
+  has_many :users, through: :reviews
+  ...
+end
+
+class Review < ActiveRecord::Base
+  ...
+  belongs_to :user
+  belongs_to :product
+  ...
+end
+
+class User < ActiveRecord::Base
+  ...
+  has_many :reviews
+  has_many :products, through: :reviews
+  ...
+end
+Using the associations explanation above, modify your models so that all of the
+relationships are correct.
+
+Now that our models have been created and correctly associated let's plan out how
+we would like to display our reviews. Should we display all of the reviews in a list?
+Should they be intermingled with all of the products? Should we be able to see each 
+review individually?
+
+It would probably be best if a user could view all of the reviews associated with
+a product on the product show page. A good way to do that, is to follow RESTful
+convention and use a concept called "Nested Resources", which we will discuss in
+the next commit, to create well structured routes.
+
+What we covered in this commit
+
+Associations
+belongs_to
+has_many
+has_many, :through
+12. Writing the review routes, controllers and views
+
+Concept: Nested Resources
+
+Let's start by creating a controller for our reviews controller:
+
+$ rails g controller reviews show create destroy
+Nested routes allow you to capture an associative relationship in your routing. In this case, you could include this route declaration and remove the routes generated above:
+
+config/routes.rb
+
+Rails.application.routes.draw do
+  .
+  .
+  .
+  resources :products do
+    resources :reviews, only: [:show, :create, :destroy]
+  end
+end
+Now try the following command:
+
+  $ rails routes
+It should display the below in your terminal.
+
+Nested Routes
+
+This routing convention lets us easily find a product by its id and either a particular review or all of the reviews associated with it. It may be a little fuzzy right now, but it will make sense by the end of this commit.
+
+Concept: Filters
+
+In order to associate a review with a product, we will need to find a product by its ID. We can use a method called a 'beforeaction' in our reviews controller to run before every action. Let's call a loadproduct method that retrieves the appropriate product so a new review can be associated to it. If you would like to read more, try Action Controller: 7 Filters
+
+app/controllers/reviews_controller.rb
+
+class ReviewsController < ApplicationController
+  before_action :load_product
+
+  def show
+    @review = Review.find(params[:id])
+  end
+
+  def create
+    @review = @product.reviews.build(review_params)
+    @review.user = current_user
+
+    # Check out this article on [.build](http://stackoverflow.com/questions/783584/ruby-on-rails-how-do-i-use-the-active-record-build-method-in-a-belongs-to-rel)
+    # You could use a longer alternate syntax if it makes more sense to you
+    #
+    # @review = Review.new(
+    #   comment: params[:review][:comment],
+    #   product_id: @product.id,
+    #   user_id: current_user.id
+    # )
+
+    if @review.save
+      redirect_to products_url, notice: 'Review created successfully'
+    else
+      render 'products/show'
+    end
+  end
+
+  def destroy
+    @review = Review.find(params[:id])
+    @review.destroy
+  end
+
+  private
+  def review_params
+    params.require(:review).permit(:comment, :product_id)
+  end
+
+  def load_product
+    @product = Product.find(params[:product_id])
+  end
+end
+app/controllers/products_controller.rb
+
+def show
+  @product = Product.find(params[:id])
+
+  if current_user
+    @review = @product.reviews.build
+  end
+end
+Now that we have created the appropriate actions in the reviews controller, let's set up the ability to view reviews on the product show page.
+
+app/views/products/show.html.erb
+
+ <h3>Reviews</h3>
+
+  <p>Reviews for <%= @product.name %></p>
+
+  <% @product.reviews.each do |review| %>
+    <p>
+      <%= review.comment %>
+      <br>
+      <% if review.user != nil %>
+        <em> by <%= review.user.email %></em>
+        Added on: <%= review.created_at %>
+      <% end %>
+    </p>
+  <% end %>
+Since we are required to associate a review with a product when it one is created, we will need to build that association. Luckily Rails' form_for makes it incredibly easy for us to do this. We pass an array to formfor like so: `<%= formfor([@product, @review]) do |f| %>`.
+
+app/views/products/show.html.erb
+
+.
+.
+.
+<% if current_user %>
+  <h4>New Review</h4>
+
+  <%= form_for([@product, @review]) do |f| %>
+    <% if @review.errors.any? %>
+      <div id="error_explanation">
+        <h2><%= pluralize(@review.errors.count, "error") %> prohibited this review from being saved:</h2>
+
+        <ul>
+        <% @review.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="field">
+      <%= f.label :comment %><br />
+      <%= f.text_area :comment %>
+    </div>
+    <div class="actions">
+      <%= f.submit %>
+    </div>
+  <% end %>
+
+<% else %>
+  <p>Please <%= link_to "log in", new_session_path %> to add a review.</p>
+<% end %>
+.
+.
+.
+Stretch Assignment: Refactor the show page
+
+Create a separate partial to display to reviews and one to create new reviews on the products show page. You will be able to use the form partial in the app/views/reviews/edit.html.erb.
+
+Now that everything is functioning let's commit those changes.
+
+$ git status
+$ git add --all
+$ git commit -m "Writing the review routes, controllers and views"
+$ git push
+What we covered in this commit
+
+Nested Resources
+Filters
+Nested Forms
+Practice Refactoring views
+13. Adding authorization to ensure users are logged in before they create reviews
+
+Concept: Authorization
+
+We would like to restrict what a visitor can do without logging in. We do this by creating a method to be called before controller actions that would require a user to be logged in. Let's call this method ensure_logged_in.
+
+app/controllers/application_controller.rb
+
+class ApplicationController < ActionController::Base
+  .
+  .
+  .
+
+  def ensure_logged_in
+    unless current_user
+      flash[:alert] = "Please log in"
+      redirect_to new_session_url
+    end
+  end
+end
+app/controllers/reviews_controller.rb
+
+class ReviewsController < ApplicationController
+  before_action :ensure_logged_in, only: [:create, :destroy]
+  .
+  .
+  .
+end
+$ git status
+$ git add --all
+$ git commit -m "Adding authorization to ensure users are logged in before they create reviews"
+$ git push
+What we covered in this commit
+
+Authorization
+14. Adding user names
+
+We'd like to be able to display our users names as well, and in order to do that we'd like to know their names. To do that we're going to add a name column to our user model.
+
+We can use the generator command to create a migration that once run will add exactly what we need.
+
+  $ rails g migration AddNameToUser name:string
+This command creates a pre configured migration with an add_column method that takes a table name, column name and a column data type as its parameters.
+
+[TIMESTAMP]_add_name_to_user.rb
+
+class AddNameToUser < ActiveRecord::Migration
+  def change
+    add_column :users, :name, :string
+  end
+end
+Run rails db:migrate to modify the table. Let's make sure that a visitor inputs a name when they create a user.
+
+app/models/user.rb
+
+class User < ActiveRecord::Base
+  .
+  .
+  .
+
+  validates :name, presence: true
+
+  .
+  .
+  .
+end
+We'll also need to modify our form to accept a user's name as input.
+
+app/views/users/new.html.erb
+
+  .
+  .
+  .
+  <div class="field">
+    <%= f.label :name %><br/>
+    <%= f.text_field :name %>
+  </div>
+  .
+  .
+  .
+Additionally, we'll need to allow :name as part of our user_params
+
+app/controllers/users.rb
+
+class UsersController < ApplicationController
+  .
+  .
+  .
+  private
+  def user_params
+    params.require(:user).permit(:email, :password, :password_confirmation, :name)
+  end
+end
+Lastly we'll need to modify the views/layout/application.html.erb and views/products/show.html.erb pages to display the user's name instead of their email.
+
+Great job! Let's commit our changes.
+
+$ git status
+$ git add --all
+$ git commit -m "Adding user names"
+$ git push
+What we covered in this commit
+
+Adding a column

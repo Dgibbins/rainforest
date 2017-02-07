@@ -2,10 +2,10 @@
 
 one:
   comment: MyText
-  product_id: one
-  user_id: one
+  product_id: 1
+  user_id: 1
 
 two:
   comment: MyText
-  product_id: two
-  user_id: two
+  product_id: 1
+  user_id: 1

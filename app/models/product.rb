@@ -1,9 +1,9 @@
 class Product < ApplicationRecord
+  has_many :reviews
+  has_many :users, through: :reviews
 
   validates :description, :name, presence:{ message: "must be given please" }
   validates :price_in_cents, numericality: {only_integer: true}
-
-  has_many :users, through: :reviews
 
 
   def dollars_conversion
